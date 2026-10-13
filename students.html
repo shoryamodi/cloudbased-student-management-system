@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row" style="margin-bottom:14px">
+  <h1 style="margin:0">Students</h1><span class="spacer"></span>
+  <form class="row" method="get">
+    <input name="q" value="{{ q }}" placeholder="Search name, roll no, dept…">
+    <button class="btn ghost">Search</button>
+  </form>
+  <a class="btn" href="{{ url_for('student_new') }}">+ Add student</a>
+</div>
+<div class="card">
+  {% if students %}
+  <table>
+    <tr><th>Roll No</th><th>Name</th><th>Department</th><th>Year</th><th>Email</th><th></th></tr>
+    {% for s in students %}
+    <tr>
+      <td>{{ s.roll_no }}</td>
+      <td><a href="{{ url_for('student_detail', sid=s.id) }}">{{ s.name }}</a></td>
+      <td>{{ s.dept or '—' }}</td><td>{{ s.year }}</td><td>{{ s.email or '—' }}</td>
+      <td style="text-align:right">
+        <a class="btn ghost sm" href="{{ url_for('student_edit', sid=s.id) }}">Edit</a>
+        <form class="inline" method="post" action="{{ url_for('student_delete', sid=s.id) }}"
+              onsubmit="return confirm('Delete {{ s.name|e }}?')">
+          <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+          <button class="btn danger sm">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="muted">No students found.</p>{% endif %}
+</div>
+{% endblock %}

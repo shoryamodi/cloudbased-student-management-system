@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row" style="margin-bottom:14px">
+  <h1 style="margin:0">{{ s.name }}</h1><span class="spacer"></span>
+  <a class="btn ghost" href="{{ url_for('student_edit', sid=s.id) }}">Edit</a>
+  <a class="btn ghost" href="{{ url_for('students') }}">Back</a>
+</div>
+<div class="card">
+  <div class="grid">
+    <div><label>Roll number</label>{{ s.roll_no }}</div>
+    <div><label>Department</label>{{ s.dept or '—' }}</div>
+    <div><label>Year</label>{{ s.year }}</div>
+    <div><label>Email</label>{{ s.email or '—' }}</div>
+    <div><label>Phone</label>{{ s.phone or '—' }}</div>
+  </div>
+</div>
+<div class="card">
+  <h2>Enrolled courses</h2>
+  {% if enr %}
+  <table>
+    <tr><th>Code</th><th>Title</th><th>Credits</th><th>Grade</th><th></th></tr>
+    {% for e in enr %}
+    <tr>
+      <td>{{ e.code }}</td><td>{{ e.title }}</td><td>{{ e.credits }}</td>
+      <td>
+        <form class="row" method="post" action="{{ url_for('set_grade', eid=e.id) }}">
+          <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+          <input name="grade" value="{{ e.grade }}" maxlength="3" style="width:64px" placeholder="—">
+          <button class="btn ghost sm">Save</button>
+        </form>
+      </td>
+      <td style="text-align:right">
+        <form class="inline" method="post" action="{{ url_for('unenroll', eid=e.id) }}">
+          <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+          <button class="btn danger sm">Remove</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="muted">Not enrolled in any course.</p>{% endif %}
+  {% if available %}
+  <form class="row" method="post" action="{{ url_for('enroll', sid=s.id) }}" style="margin-top:16px">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <select name="course_id">
+      {% for c in available %}<option value="{{ c.id }}">{{ c.code }} — {{ c.title }}</option>{% endfor %}
+    </select>
+    <button class="btn">Enroll</button>
+  </form>
+  {% elif not enr %}
+  <p class="muted">Add courses first on the <a href="{{ url_for('courses') }}">Courses</a> page.</p>
+  {% endif %}
+</div>
+{% endblock %}

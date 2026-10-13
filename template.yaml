@@ -1,0 +1,108 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Student Management System - one-click deploy (EC2 + Elastic IP)
+
+Parameters:
+  AdminUsername:
+    Type: String
+    Default: admin
+    AllowedPattern: '[A-Za-z0-9_]{3,32}'
+    Description: Login username for the admin account
+  AdminPassword:
+    Type: String
+    NoEcho: true
+    MinLength: 8
+    MaxLength: 64
+    AllowedPattern: '[A-Za-z0-9]+'
+    ConstraintDescription: Letters and numbers only, at least 8 characters
+    Description: Login password for the admin account (letters and numbers only)
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    AllowedValues: [t3.micro, t3.small, t3.medium, t2.micro]
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+
+Resources:
+  WebSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow HTTP to the student management app
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: ec2.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles: [!Ref InstanceRole]
+
+  AppServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref LatestAmiId
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      SecurityGroupIds: [!GetAtt WebSecurityGroup.GroupId]
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs: { VolumeSize: 10, VolumeType: gp3, Encrypted: true }
+      Tags:
+        - Key: Name
+          Value: student-management-system
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -ex
+          dnf install -y python3-pip
+          mkdir -p /opt/sms/app /opt/sms/data
+          echo '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' | base64 -d | tar xz -C /opt/sms/app
+          pip3 install -r /opt/sms/app/requirements.txt
+          cat > /etc/sms.env <<EOF
+          ADMIN_USER=${AdminUsername}
+          ADMIN_PASS=${AdminPassword}
+          SMS_DB=/opt/sms/data/students.db
+          SECRET_KEY=$(openssl rand -hex 24)
+          EOF
+          chmod 600 /etc/sms.env
+          cat > /etc/systemd/system/sms.service <<EOF
+          [Unit]
+          Description=Student Management System
+          After=network.target
+          [Service]
+          WorkingDirectory=/opt/sms/app
+          EnvironmentFile=/etc/sms.env
+          ExecStart=/usr/local/bin/gunicorn -w 2 -b 0.0.0.0:80 app:app
+          AmbientCapabilities=CAP_NET_BIND_SERVICE
+          Restart=always
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+          systemctl daemon-reload
+          systemctl enable --now sms
+
+  ElasticIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      InstanceId: !Ref AppServer
+
+Outputs:
+  AppURL:
+    Description: Open this URL in your browser (give it ~3 minutes after the stack finishes)
+    Value: !Sub http://${ElasticIP}
+  Username:
+    Value: !Ref AdminUsername

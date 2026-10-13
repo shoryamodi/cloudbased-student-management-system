@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Dashboard</h1>
+<div class="stats">
+  <div class="stat"><b>{{ stats.students }}</b><span>Students</span></div>
+  <div class="stat"><b>{{ stats.courses }}</b><span>Courses</span></div>
+  <div class="stat"><b>{{ stats.enrollments }}</b><span>Enrollments</span></div>
+</div>
+<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
+  <div class="card">
+    <h2>Students by department</h2>
+    {% if by_dept %}
+    <table>{% for d in by_dept %}<tr><td>{{ d.d }}</td><td style="text-align:right">{{ d.n }}</td></tr>{% endfor %}</table>
+    {% else %}<p class="muted">No students yet.</p>{% endif %}
+  </div>
+  <div class="card">
+    <div class="row"><h2>Recently added</h2><span class="spacer"></span>
+      <a class="btn sm" href="{{ url_for('student_new') }}">+ Add student</a></div>
+    {% if recent %}
+    <table>{% for s in recent %}
+      <tr><td><a href="{{ url_for('student_detail', sid=s.id) }}">{{ s.name }}</a></td>
+          <td class="muted">{{ s.roll_no }}</td></tr>{% endfor %}</table>
+    {% else %}<p class="muted">Nothing here yet.</p>{% endif %}
+  </div>
+</div>
+{% endblock %}
